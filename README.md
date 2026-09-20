@@ -1,182 +1,142 @@
-SSL-GI: Dual Self-Supervised Learning for Gastrointestinal Image Classification
+# SSL-GI: Dual Self-Supervised Learning for Gastrointestinal Image Classification
 
-SSL-GI combines masked image reconstruction and multi-view contrastive learning to learn representations for gastrointestinal endoscopy image classification. The framework uses a shared, ImageNet-pretrained ViT-Small encoder and adapts it to a 23-class classification task on Hyper-Kvasir.
+SSL-GI combines masked image reconstruction and multi-view contrastive learning for gastrointestinal endoscopy image classification. The framework uses a shared ImageNet-pretrained ViT-Small encoder, followed by partial fine-tuning for 23-class classification on Hyper-Kvasir.
 
-Overview
+## Overview
 
-Limited labeled data and class imbalance make endoscopic image classification challenging. SSL-GI uses unlabeled endoscopic images during self-supervised pretraining, followed by supervised fine-tuning on labeled images.
+Limited labeled images and class imbalance make endoscopic image classification challenging. SSL-GI addresses these challenges through two stages:
 
-The approach jointly optimizes two complementary objectives:
+1. **Self-supervised pretraining:** Jointly learn reconstruction and contrastive objectives using unlabeled images.
+2. **Supervised fine-tuning:** Adapt the pretrained encoder to gastrointestinal image classification using labeled images.
 
-Masked reconstruction: learn image structure by reconstructing masked image content with a Masked Autoencoder (MAE) decoder.
+## Key Features
 
-Multi-view contrastive learning: learn representations across augmented views using an InfoNCE objective and a projection head.
+- **Shared backbone:** ImageNet-pretrained ViT-Small encoder.
+- **Dual objectives:** Masked Autoencoder (MAE) reconstruction and multi-view InfoNCE.
+- **Multi-view learning:** Four augmented views per image.
+- **Adaptive loss balancing:** Uncertainty-based weighting of pretraining objectives.
+- **Partial fine-tuning:** Update the last six Transformer blocks and final normalization layer.
+- **Feature fusion:** Add the CLS-token representation to the mean patch-token representation.
+- **Class imbalance handling:** Focal loss during downstream classification.
+- **Discriminative learning rates:** Train the classification head with a learning rate 10 times that of the unfrozen encoder.
 
-Adaptive uncertainty-based weighting balances the objectives during pretraining. Downstream classification uses partial fine-tuning, token feature fusion, focal loss, and discriminative learning rates.
+## Architecture
 
-Architecture
-<img width="1051" height="520" alt="image" src="https://github.com/user-attachments/assets/a5efe38b-b52d-4d55-b35a-4f681a77bb0a" />
+### Stage 1: Dual Self-Supervised Pretraining
 
-Stage 1: Dual self-supervised pretraining
+Unlabeled endoscopic images are processed through reconstruction and contrastive branches sharing the same encoder.
 
-Prepare randomly masked inputs and four augmented views of each unlabeled image.
+#### Reconstruction Branch
 
-Process the inputs through a shared ImageNet-pretrained ViT-Small encoder.
+1. Apply random masking to the input image.
+2. Extract representations using the ViT-Small encoder.
+3. Reconstruct masked image content using an MAE decoder.
+4. Compute the reconstruction loss.
 
-Use an MAE decoder for the reconstruction objective.
+#### Contrastive Branch
 
-Use a projection head for multi-view InfoNCE learning.
+1. Generate four augmented views of each image.
+2. Extract representations using the shared encoder.
+3. Process representations through a projection head.
+4. Compute the multi-view InfoNCE loss.
 
-Jointly optimize the encoder using adaptive uncertainty-based loss weighting.
+#### Joint Optimization
 
-The supplied architecture diagram summarizes the joint objective as:
+The architecture diagram summarizes the combined objective as:
 
-\mathcal{L}_{\mathrm{total}} = \mathcal{L}_{\mathrm{rec}} + \lambda\mathcal{L}_{\mathrm{InfoNCE}}
+**L_total = L_rec + λ × L_InfoNCE**
 
-This is a schematic expression. The abstract specifies learned uncertainty-based weights; the exact parameterization and any additional loss terms must be documented with the implementation.
+Where:
 
-Stage 2: Supervised downstream classification
+- **L_total:** Combined pretraining loss.
+- **L_rec:** Reconstruction loss.
+- **L_InfoNCE:** Multi-view contrastive loss.
+- **λ:** Relative weighting of the contrastive objective in this schematic expression.
 
-Transfer the pretrained encoder to the labeled classification task.
+The framework uses adaptive uncertainty-based weighting. The exact implemented objective may include additional weighting and regularization terms beyond this schematic.
 
-Fine-tune the last six Transformer blocks and the final normalization layer, keeping earlier encoder blocks frozen.
+### Stage 2: Supervised Fine-Tuning
 
-Add the CLS-token representation to the mean patch-token representation:
+The pretrained encoder is adapted to the downstream classification task:
 
-\mathbf{z}_{\mathrm{fused}} = \mathbf{z}_{\mathrm{CLS}} + \frac{1}{N}\sum_{i=1}^{N}\mathbf{z}_{i}
+1. Freeze the earlier Transformer blocks.
+2. Fine-tune the last six Transformer blocks and final normalization layer.
+3. Combine the CLS-token vector with the average patch-token vector.
+4. Pass the combined representation to an MLP classification head.
+5. Train using focal loss and discriminative learning rates.
 
-Pass the fused representation to an MLP classification head for 23-class prediction.
+#### Feature Fusion
 
-Use focal loss to address class imbalance.
+**z_fused = z_CLS + (z₁ + z₂ + … + z_N) / N**
 
-Set the classification head learning rate to 10 times the learning rate of the unfrozen encoder parameters.
+Where:
 
-Dataset and Experimental Setup
+- **z_fused:** Combined image representation.
+- **z_CLS:** CLS-token representation.
+- **z₁ … z_N:** Patch-token representations.
+- **N:** Number of patch tokens.
 
-Setting
+#### Learning-Rate Strategy
 
-Description
+**Head learning rate = 10 × Encoder learning rate**
 
-Dataset
+Here, the encoder learning rate applies to the unfrozen encoder parameters.
 
-Hyper-Kvasir
+## Dataset and Experimental Setup
 
-Downstream task
+| Setting | Configuration |
+|---|---|
+| Dataset | Hyper-Kvasir |
+| Task | Gastrointestinal endoscopy image classification |
+| Number of classes | 23 |
+| Training split | 70% |
+| Validation split | 15% |
+| Test split | 15% |
+| Split strategy | Stratified |
+| Backbone | ImageNet-pretrained ViT-Small |
+| Self-supervised pretraining | 30 epochs |
+| Pretraining objectives | MAE reconstruction + multi-view InfoNCE |
+| Loss balancing | Adaptive uncertainty-based weighting |
+| Fine-tuned encoder components | Last six Transformer blocks and final normalization layer |
+| Feature fusion | CLS token + mean patch tokens |
+| Classification head | MLP |
+| Classification loss | Focal loss |
+| Head-to-encoder learning-rate ratio | 10:1 |
 
-Gastrointestinal endoscopy image classification
+## Reported Results
 
-Number of classes
+The following results are reported in the project abstract:
 
-23
+| Metric | Value |
+|---|---:|
+| Accuracy | **88.00%** |
+| Macro F1-score | **58.30%** |
+| Matthews correlation coefficient (MCC) | **0.8699** |
+| Self-supervised pretraining epochs | **30** |
 
-Data split
+Accuracy and macro F1 should be considered together when assessing performance on the imbalanced classification task.
 
-Stratified 70% training / 15% validation / 15% test
+### Pretraining Efficiency
 
-Backbone
+The abstract compares the proposed 30-epoch pretraining schedule with a 400-epoch single-objective MAE baseline and reports an approximately four-times-smaller backbone.
 
-ImageNet-pretrained ViT-Small
+The proposed schedule uses approximately 13.3 times fewer pretraining epochs. This ratio alone does not establish an equivalent runtime or computational speedup. Such comparisons require measured runtime, hardware details, and per-epoch computational costs.
 
-Additional self-supervised pretraining
+## Reproducibility
 
-30 epochs
+For complete reproduction, the implementation should document:
 
-Pretraining objectives
+- Dataset version, class mapping, and split seed.
+- Unlabeled pretraining data and separation from held-out evaluation data.
+- Input resolution, masking ratio, and augmentation settings.
+- Exact uncertainty-weighted loss formulation.
+- Batch size, optimizer, learning rates, and scheduler.
+- Fine-tuning duration and checkpoint selection.
+- Dependency versions, hardware, and random seeds.
+- Evaluation commands and per-class results.
 
-Masked reconstruction and multi-view InfoNCE
+Installation and execution commands are not included because the repository code and environment configuration have not been provided.
 
-Loss balancing
+## Citation and License
 
-Adaptive uncertainty-based weighting
-
-Fine-tuned encoder components
-
-Last six Transformer blocks and final normalization layer
-
-Feature fusion
-
-CLS token + mean patch tokens
-
-Classification head
-
-MLP
-
-Classification loss
-
-Focal loss
-
-Head-to-encoder learning-rate ratio
-
-10:1
-
-The exact dataset version, class mapping, image counts, pretraining image pool, and split seed are not specified in the supplied abstract. These details should accompany the implementation for reproducibility.
-
-Reported Results
-
-The following values are reported in the supplied abstract and have not been independently reproduced for this README.
-
-Metric
-
-Reported value
-
-Accuracy
-
-88.00%
-
-Macro F1
-
-58.30%
-
-Matthews correlation coefficient (MCC)
-
-0.8699
-
-Self-supervised pretraining epochs
-
-30
-
-The abstract compares the 30-epoch pretraining schedule with a single-objective MAE baseline trained for 400 epochs and reports a backbone approximately four times smaller.
-
-Interpretation of efficiency: 400 / 30 is approximately 13.3, indicating approximately 13.3 times fewer pretraining epochs. An equivalent wall-clock or computational speedup cannot be established from epoch counts alone; it requires matched hardware, per-epoch costs, and measured runtime or FLOPs. The backbone-size comparison also requires the baseline configuration and parameter counts.
-
-The difference between accuracy and macro F1 indicates that aggregate accuracy alone does not fully describe performance across classes. Per-class precision, recall, F1, and a confusion matrix would provide additional context.
-
-Key Features
-
-Joint reconstruction and contrastive pretraining with a shared encoder.
-
-Four augmented views for multi-view representation learning.
-
-Adaptive weighting of the pretraining objectives.
-
-Partial encoder fine-tuning for downstream adaptation.
-
-CLS and mean patch-token feature fusion.
-
-Focal loss and separate learning rates for the head and encoder.
-
-Reproducibility and Usage
-
-This README documents the supplied abstract and architecture figure. Source code, dependency files, checkpoints, and executable commands were not supplied, so installation and training commands are not yet documented.
-
-To make the experiments reproducible, include:
-
-Environment requirements and dependency versions.
-
-Dataset source, terms of use, class mapping, and split manifests.
-
-The source of unlabeled pretraining images and how held-out data are excluded.
-
-Patient or video grouping information, where available, to assess split leakage.
-
-Input resolution, normalization, masking ratio, and augmentation settings.
-
-The precise uncertainty-weighted objective and InfoNCE formulation.
-
-Optimizer, learning rates, scheduler, batch size, and fine-tuning duration.
-
-Random seeds, checkpoint selection rules, and evaluation scripts.
-
-Hardware, runtime, and parameter counts for efficiency comparisons.
-
-Ablations comparing reconstruction-only, contrastive-only, and joint training under matched conditions.
+Add the verified paper citation and repository license when available. Document dataset usage terms separately.
