@@ -21,6 +21,11 @@ Limited labeled images and class imbalance make endoscopic image classification 
 - **Discriminative learning rates:** Train the classification head with a learning rate 10 times that of the unfrozen encoder.
 
 ## Architecture
+<img width="1050" height="513" alt="image" src="https://github.com/user-attachments/assets/038995ed-2bce-42fe-aa3b-7bc2233e078c" />
+Overview of the proposed dual self-supervised learning framework. The methodology consists of two sequential stages: (1) joint
+self-supervised pretraining using a shared ImageNet-pretrained ViT-Small encoder with Masked Autoencoder (MAE) reconstruction and multiview contrastive learning (InfoNCE), where both objectives are jointly optimized to learn robust visual representations; and (2) downstream
+gastrointestinal endoscopy image classification through partial fine-tuning of the pretrained encoder, followed by feature fusion and an MLP
+classifier for 23-class disease prediction.
 
 ### Stage 1: Dual Self-Supervised Pretraining
 
