@@ -1,4 +1,4 @@
-# SSL-GI: Dual Self-Supervised Learning for Gastrointestinal Image Classification
+# JSSL-GI: Joint Self-Supervised Learning with Masked Autoencoders and Contrastive Objectives for Multi-Category Gastrointestinal Endoscopy Image Classification
 
 SSL-GI combines masked image reconstruction and multi-view contrastive learning for gastrointestinal endoscopy image classification. The framework uses a shared ImageNet-pretrained ViT-Small encoder, followed by partial fine-tuning for 23-class classification on Hyper-Kvasir.
 
