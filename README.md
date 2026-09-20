@@ -114,8 +114,8 @@ The following results are reported in the project abstract:
 
 | Metric | Value |
 |---|---:|
-| Accuracy | **91.00%** |
-| Macro F1-score | **62.30%** |
+| Accuracy | **92.00%** |
+| Macro F1-score | **67.30%** |
 | Matthews correlation coefficient (MCC) | **0.8699** |
 | Self-supervised pretraining epochs | **30** |
 
